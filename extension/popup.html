@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Playwrite Recoder</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="app">
+      <header class="header">
+        <h1>Playwrite Recoder</h1>
+        <p>브라우징을 Playwright 단계로 기록합니다.</p>
+      </header>
+
+      <section class="panel">
+        <div class="server-card">
+          <div>
+            <p class="attached-label">Node Server</p>
+            <p id="serverStatusText" class="attached-value">Checking...</p>
+            <p id="serverCommandText" class="attached-meta">Run `npm start` in the project root.</p>
+          </div>
+          <span id="serverBadge" class="server-badge is-checking">Checking</span>
+        </div>
+        <div class="actions">
+          <button id="copyStartServerBtn">Copy Start Command</button>
+        </div>
+        <div class="recording-toggle" aria-label="Recording Toggle">
+          <button id="recordOnBtn" class="toggle-button">Recording On</button>
+          <button id="recordOffBtn" class="toggle-button">Recording Off</button>
+        </div>
+        <label class="option-row">
+          <input id="reuseSessionCheckbox" type="checkbox" checked>
+          <span>Reuse Browser Session</span>
+        </label>
+        <label class="option-row">
+          <input id="useDelayCheckbox" type="checkbox" checked>
+          <span>Replay With Delay</span>
+        </label>
+        <div class="attached-card">
+          <p class="attached-label">Attached Tab</p>
+          <p id="attachedTabText" class="attached-value">None</p>
+        </div>
+        <div class="actions">
+          <button id="attachCurrentTabBtn">Attach Current Tab</button>
+          <button id="detachTabBtn">Detach Tab</button>
+        </div>
+        <div class="actions">
+          <button id="inspectOnBtn">Inspect On</button>
+          <button id="inspectOffBtn">Inspect Off</button>
+        </div>
+        <div class="attached-card">
+          <p class="attached-label">Inspect Selector</p>
+          <p id="inspectSelectorText" class="attached-value">None</p>
+          <p id="inspectMetaText" class="attached-meta">Hover or pick an element</p>
+        </div>
+        <div class="actions">
+          <button id="copyInspectSelectorBtn">Copy Selector</button>
+        </div>
+        <div class="profile-row">
+          <label for="profileSelect" class="profile-label">Profile</label>
+          <select id="profileSelect" class="profile-select" data-server-required="true"></select>
+        </div>
+        <div class="actions">
+          <input id="newProfileInput" class="text-input" type="text" placeholder="new profile name" data-server-required="true">
+          <button id="createProfileBtn" data-server-required="true">Create Profile</button>
+        </div>
+        <div class="actions">
+          <button id="deleteProfileBtn" data-server-required="true">Delete Profile</button>
+        </div>
+        <div class="actions">
+          <button id="downloadJsonBtn">Download JSON</button>
+          <button id="downloadCodeBtn">Download Playwright</button>
+        </div>
+        <div class="actions">
+          <button id="replayBtn" data-server-required="true">Replay Via Node</button>
+          <button id="showTraceBtn" data-server-required="true">Show Trace</button>
+        </div>
+        <div class="actions">
+          <button id="showReportBtn" data-server-required="true">Show Report</button>
+        </div>
+        <div class="actions">
+          <button id="resetSessionBtn" data-server-required="true">Reset Session</button>
+        </div>
+        <p id="status" class="status">Idle</p>
+      </section>
+
+      <section class="panel">
+        <h2>Recorded Events</h2>
+        <div class="view-toggle" aria-label="Events View Toggle">
+          <button id="generalViewBtn" class="toggle-button">General</button>
+          <button id="developerViewBtn" class="toggle-button">Developer</button>
+        </div>
+        <pre id="eventsOutput" class="output"></pre>
+      </section>
+
+      <section class="panel">
+        <h2>Playwright Code</h2>
+        <pre id="codeOutput" class="output"></pre>
+      </section>
+    </main>
+
+    <script src="playwright-generator.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

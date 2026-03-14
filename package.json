@@ -1,0 +1,26 @@
+{
+  "name": "playwrite-recoder",
+  "version": "0.1.0",
+  "description": "Chrome extension recorder that saves browsing sessions as Playwright steps and replays them with Node.js.",
+  "main": "server/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "build": "cp shared/playwright-generator.js extension/playwright-generator.js",
+    "prestart": "npm run build",
+    "start": "node server/index.js serve",
+    "replay": "node server/index.js replay",
+    "health": "node server/index.js health",
+    "test": "node --test tests/"
+  },
+  "keywords": [
+    "chrome-extension",
+    "playwright",
+    "recorder",
+    "automation"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2",
+    "playwright": "^1.52.0"
+  }
+}

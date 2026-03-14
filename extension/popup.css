@@ -1,0 +1,274 @@
+:root {
+  color-scheme: light;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  background: linear-gradient(180deg, #f3efe6 0%, #f9f7f3 100%);
+  color: #1f2937;
+}
+
+body {
+  margin: 0;
+  min-width: 420px;
+}
+
+.app {
+  padding: 16px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.header p {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.panel {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #d6d3d1;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 10px 30px rgba(28, 25, 23, 0.08);
+}
+
+.server-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid #d6d3d1;
+  border-radius: 12px;
+  background: #fafaf9;
+}
+
+.recording-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 6px;
+  margin-bottom: 8px;
+  border-radius: 14px;
+  background: #e7e5e4;
+}
+
+.view-toggle {
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  background: #e7e5e4;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.attached-card {
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid #d6d3d1;
+  border-radius: 12px;
+  background: #fafaf9;
+}
+
+.attached-label {
+  margin: 0;
+  font-size: 11px;
+  color: #78716c;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.attached-value {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #1f2937;
+  word-break: break-word;
+}
+
+.attached-meta {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #78716c;
+  word-break: break-word;
+}
+
+.server-badge {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.server-badge.is-checking {
+  background: #e7e5e4;
+  color: #57534e;
+}
+
+.server-badge.is-online {
+  background: #ccfbf1;
+  color: #115e59;
+}
+
+.server-badge.is-offline {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.profile-row {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.profile-label {
+  font-size: 12px;
+  color: #57534e;
+  font-weight: 600;
+}
+
+.profile-select,
+.text-input {
+  width: 100%;
+  border: 1px solid #d6d3d1;
+  border-radius: 10px;
+  background: #fafaf9;
+  color: #111827;
+  padding: 10px 12px;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.text-input {
+  flex: 1.2;
+}
+
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 10px;
+  font-size: 12px;
+  color: #44403c;
+}
+
+.option-row input {
+  width: 14px;
+  height: 14px;
+}
+
+button {
+  flex: 1;
+  border: 0;
+  border-radius: 10px;
+  background: #d6d3d1;
+  color: #111827;
+  padding: 10px 12px;
+  cursor: pointer;
+  font: inherit;
+}
+
+button.primary {
+  background: #0f766e;
+  color: white;
+}
+
+button.toggle-button {
+  background: transparent;
+  color: #57534e;
+  font-weight: 600;
+}
+
+button.toggle-button.is-active {
+  background: #0f766e;
+  color: white;
+}
+
+button.toggle-button.is-idle {
+  background: #fafaf9;
+}
+
+button:hover {
+  filter: brightness(0.98);
+}
+
+button:disabled,
+select:disabled,
+input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.status {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #374151;
+}
+
+.output {
+  max-height: 240px;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 10px;
+  background: #111827;
+  color: #e5e7eb;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.output .tok-key {
+  color: #93c5fd;
+}
+
+.output .tok-string {
+  color: #86efac;
+}
+
+.output .tok-number {
+  color: #f9a8d4;
+}
+
+.output .tok-boolean {
+  color: #fca5a5;
+}
+
+.output .tok-null {
+  color: #c4b5fd;
+}
+
+.output .tok-punct {
+  color: #94a3b8;
+}
+
+.output .tok-keyword {
+  color: #fda4af;
+}
+
+.output .tok-fn {
+  color: #67e8f9;
+}
+
+.output .tok-comment {
+  color: #6b7280;
+}
+
+h2 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}

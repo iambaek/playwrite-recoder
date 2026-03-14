@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Playwrite Recoder Options</title>
+    <link rel="stylesheet" href="options.css">
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <p class="eyebrow">Options</p>
+        <h1>Playwrite Recoder Settings</h1>
+        <p class="sub">기본 재생 옵션과 선택자 규칙을 설정합니다.</p>
+      </header>
+
+      <section class="card">
+        <h2>Replay Defaults</h2>
+        <label class="field checkbox-row">
+          <input id="defaultReuseSession" type="checkbox">
+          <span>Reuse Browser Session 기본값</span>
+        </label>
+        <label class="field checkbox-row">
+          <input id="defaultUseDelay" type="checkbox">
+          <span>Replay With Delay 기본값</span>
+        </label>
+        <label class="field">
+          <span class="label">Live Sync Interval (ms)</span>
+          <input id="liveSyncIntervalMs" type="number" min="100" step="100">
+        </label>
+      </section>
+
+      <section class="card">
+        <h2>Recording</h2>
+        <label class="field">
+          <span class="label">Test ID Attribute</span>
+          <input id="testIdAttribute" type="text" placeholder="data-testid">
+        </label>
+      </section>
+
+      <section class="card">
+        <h2>UI Behavior</h2>
+        <label class="field checkbox-row">
+          <input id="openSidePanelOnActionClick" type="checkbox">
+          <span>아이콘 클릭 시 Side Panel 열기</span>
+        </label>
+      </section>
+
+      <footer class="footer">
+        <button id="saveBtn" class="primary">Save Settings</button>
+        <button id="resetBtn">Reset Defaults</button>
+        <p id="status" class="status">Idle</p>
+      </footer>
+    </main>
+    <script src="options.js"></script>
+  </body>
+</html>

@@ -1,0 +1,76 @@
+{
+  "manifest_version": 3,
+  "name": "Playwrite Recoder",
+  "version": "0.1.0",
+  "description": "Record browsing activity and save it as Playwright-compatible steps.",
+  "permissions": [
+    "contextMenus",
+    "notifications",
+    "sidePanel",
+    "storage",
+    "tabs",
+    "activeTab",
+    "scripting",
+    "webNavigation"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_page": "options.html",
+  "side_panel": {
+    "default_path": "popup.html"
+  },
+  "icons": {
+    "16": "icons/idle-icon-16.png",
+    "32": "icons/idle-icon-32.png",
+    "48": "icons/idle-icon-48.png",
+    "128": "icons/idle-icon-128.png"
+  },
+  "action": {
+    "default_title": "Playwrite Recoder",
+    "default_icon": {
+      "16": "icons/idle-icon-16.png",
+      "32": "icons/idle-icon-32.png"
+    }
+  },
+  "commands": {
+    "toggle-recording": {
+      "suggested_key": {
+        "default": "Alt+Shift+R",
+        "mac": "Option+Shift+R"
+      },
+      "description": "Toggle recording on attached or active tab"
+    },
+    "attach-current-tab": {
+      "suggested_key": {
+        "default": "Alt+Shift+A",
+        "mac": "Option+Shift+A"
+      },
+      "description": "Attach current active tab to recorder"
+    },
+    "open-recorder-panel": {
+      "suggested_key": {
+        "default": "Alt+Shift+P",
+        "mac": "Option+Shift+P"
+      },
+      "description": "Open recorder side panel"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "all_frames": true,
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

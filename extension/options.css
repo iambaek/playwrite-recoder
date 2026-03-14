@@ -1,0 +1,114 @@
+:root {
+  color-scheme: light;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  color: #1f2937;
+  background: linear-gradient(180deg, #f3efe6 0%, #f9f7f3 100%);
+}
+
+body {
+  margin: 0;
+}
+
+.page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 20px 60px;
+}
+
+.hero {
+  margin-bottom: 20px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 36px;
+}
+
+.sub {
+  margin: 8px 0 0;
+  color: #6b7280;
+}
+
+.card {
+  margin-top: 16px;
+  padding: 20px;
+  border: 1px solid #d6d3d1;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 12px 30px rgba(28, 25, 23, 0.08);
+}
+
+.card h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.field:first-of-type {
+  margin-top: 0;
+}
+
+.checkbox-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.label {
+  font-size: 13px;
+  color: #57534e;
+  font-weight: 600;
+}
+
+input[type="text"],
+input[type="number"] {
+  border: 1px solid #d6d3d1;
+  border-radius: 12px;
+  background: #fafaf9;
+  color: #111827;
+  padding: 12px 14px;
+  font: inherit;
+}
+
+button {
+  border: 0;
+  border-radius: 12px;
+  background: #d6d3d1;
+  color: #111827;
+  padding: 12px 16px;
+  cursor: pointer;
+  font: inherit;
+}
+
+button.primary {
+  background: #0f766e;
+  color: #fff;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.status {
+  margin: 0 0 0 6px;
+  font-size: 13px;
+  color: #57534e;
+}
