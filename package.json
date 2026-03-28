@@ -5,7 +5,7 @@
   "main": "server/index.js",
   "type": "commonjs",
   "scripts": {
-    "build": "cp shared/playwright-generator.js extension/playwright-generator.js",
+    "build": "cp shared/playwright-generator.js extension/playwright-generator.js && npx esbuild extension/src/background.js --bundle --format=esm --outfile=extension/dist/background.js --platform=browser --external:../playwright --external:./bidiOverCdp",
     "prestart": "npm run build",
     "start": "node server/index.js serve",
     "replay": "node server/index.js replay",
@@ -20,7 +20,10 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@anthropic-ai/claude-code": "^2.1.85",
+    "esbuild": "^0.27.4",
     "express": "^4.21.2",
-    "playwright": "^1.52.0"
+    "playwright": "^1.52.0",
+    "playwright-crx": "^0.15.0"
   }
 }

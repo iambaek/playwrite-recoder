@@ -15,6 +15,7 @@ const DEFAULT_SETTINGS = {
   openSidePanelOnActionClick: true
 };
 let attachedTabId = null;
+const childToParentTab = new Map();
 const inspectStateByTab = new Map();
 const CONTEXT_MENU_OPEN = "playwrite-recorder-open-panel";
 const CONTEXT_MENU_ATTACH = "playwrite-recorder-attach-tab";
@@ -356,8 +357,47 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "QUERY_RECORDING_STATE" && sender.tab && sender.tab.id != null) {
+    const senderTabId = sender.tab.id;
+
+    // Check direct mapping first
+    if (childToParentTab.has(senderTabId)) {
+      const parentId = childToParentTab.get(senderTabId);
+      const session = getSession(parentId);
+      sendResponse({ ok: true, recording: session.recording });
+      return true;
+    }
+
+    // Check own session
+    const ownSession = sessions.get(senderTabId);
+    if (ownSession) {
+      sendResponse({ ok: true, recording: ownSession.recording });
+      return true;
+    }
+
+    // Check openerTabId for popup windows
+    chrome.tabs.get(senderTabId, (tab) => {
+      if (chrome.runtime.lastError || !tab) {
+        sendResponse({ ok: true, recording: false });
+        return;
+      }
+      if (tab.openerTabId != null) {
+        const parentSession = sessions.get(tab.openerTabId);
+        if (parentSession && parentSession.recording) {
+          childToParentTab.set(senderTabId, tab.openerTabId);
+          sendResponse({ ok: true, recording: true });
+          return;
+        }
+      }
+      sendResponse({ ok: true, recording: false });
+    });
+    return true;
+  }
+
   if (message.type === "RECORDED_EVENT" && sender.tab && sender.tab.id != null) {
-    const session = getSession(sender.tab.id);
+    const senderTabId = sender.tab.id;
+    const targetTabId = childToParentTab.has(senderTabId) ? childToParentTab.get(senderTabId) : senderTabId;
+    const session = getSession(targetTabId);
     if (!session.recording) {
       sendResponse({ ok: false, ignored: true });
       return true;
@@ -392,8 +432,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const inspect = getInspectState(sender.tab.id);
     inspect.pickedSelector = message.selector || "";
     inspect.frameSelectors = Array.isArray(message.frameSelectors) ? message.frameSelectors : [];
-    inspect.enabled = false;
-    sendInspectModeToAllFrames(sender.tab.id, false).catch(() => {});
     sendResponse({ ok: true, inspect });
     return true;
   }
@@ -404,6 +442,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 chrome.tabs.onRemoved.addListener((tabId) => {
   sessions.delete(tabId);
   inspectStateByTab.delete(tabId);
+  childToParentTab.delete(tabId);
   if (attachedTabId === tabId) {
     attachedTabId = null;
   }
@@ -414,7 +453,13 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     return;
   }
 
-  const session = getSession(tabId);
+  // If this is a child popup tab, notify its content script to start recording
+  if (childToParentTab.has(tabId)) {
+    chrome.tabs.sendMessage(tabId, { type: "SET_RECORDING_STATE", recording: true }).catch(() => {});
+  }
+
+  const targetTabId = childToParentTab.has(tabId) ? childToParentTab.get(tabId) : tabId;
+  const session = getSession(targetTabId);
   if (!session.recording) {
     return;
   }
@@ -496,6 +541,14 @@ chrome.commands.onCommand.addListener(async (command) => {
 
   if (command === "toggle-recording" && targetTab) {
     await toggleRecordingForTab(targetTab).catch(() => {});
+  }
+});
+
+chrome.tabs.onCreated.addListener((tab) => {
+  if (tab.openerTabId == null) return;
+  const parentSession = sessions.get(tab.openerTabId);
+  if (parentSession && parentSession.recording) {
+    childToParentTab.set(tab.id, tab.openerTabId);
   }
 });
 

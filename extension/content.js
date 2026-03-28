@@ -293,14 +293,12 @@ document.addEventListener(
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      inspectModeEnabled = false;
       const selector = buildSelector(target);
       chrome.runtime.sendMessage({
         type: "INSPECT_PICK",
         selector,
         frameSelectors: getFrameSelectors()
       });
-      hideInspectUi();
       return;
     }
 
@@ -539,3 +537,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 loadRecorderSettings().catch(() => {});
+
+chrome.runtime.sendMessage({ type: "QUERY_RECORDING_STATE" }, (response) => {
+  if (chrome.runtime.lastError) return;
+  if (response && response.recording) {
+    isRecordingActive = true;
+  }
+});

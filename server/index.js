@@ -18,6 +18,9 @@ const {
 } = require("./playwrightRunner");
 
 const PORT = process.env.PORT || 3100;
+const MAX_CONVERSATION_HISTORY = 20;
+const MAX_PROMPT_LENGTH = 10000;
+const MAX_CODE_LENGTH = 100000;
 
 const ALLOWED_ORIGIN_PATTERN = /^chrome-extension:\/\//;
 
@@ -96,7 +99,7 @@ function createServer() {
       const result = await runRecording(recording, req.body.options || {});
       res.json(result);
     } catch (error) {
-      res.status(500).json({ ok: false, error: error.message });
+      res.json({ ok: false, errorMessage: error.message, completedAt: new Date().toISOString() });
     }
   });
 
@@ -136,6 +139,125 @@ function createServer() {
     } catch (error) {
       res.status(500).json({ ok: false, error: error.message });
     }
+  });
+
+  const conversationHistory = [];
+
+  app.post("/api/ai-prompt", function aiPrompt(req, res) {
+    const prompt = req.body && typeof req.body.prompt === "string" ? req.body.prompt.slice(0, MAX_PROMPT_LENGTH) : "";
+    const code = req.body && typeof req.body.code === "string" ? req.body.code.slice(0, MAX_CODE_LENGTH) : "";
+    if (!prompt) {
+      res.status(400).json({ ok: false, error: "prompt is required" });
+      return;
+    }
+
+    const systemInstruction = [
+      "You are a Playwright test code assistant.",
+      "The user has recorded browser interactions and generated Playwright test code.",
+      "Modify or improve the code based on the user's request.",
+      "You have access to Playwright MCP tools (browser_navigate, browser_snapshot, browser_click, etc). Use them to visit and analyze pages when the user mentions URLs or asks you to explore page structure.",
+      "",
+      "IMPORTANT CODE FORMAT RULES:",
+      "- Use a single flat test() block. Do NOT use test.describe() or multiple test() blocks.",
+      "- Use only these actions: page.goto(), page.locator().click(), page.locator().fill(), page.locator().press(), page.locator().check(), page.locator().uncheck(), page.locator().selectOption(), page.waitForTimeout(), page.evaluate() for scroll.",
+      "- Do NOT use variables, template literals, const, if/else, expect(), assertions, .first(), .isVisible(), or any conditional logic.",
+      "- Use plain string URLs directly in page.goto().",
+      "- Use simple CSS selectors or role selectors in page.locator().",
+      "- Add // comments to describe each step.",
+      "",
+      "Return ONLY the complete modified TypeScript code in a ```typescript code block, no explanations."
+    ].join("\n");
+
+    conversationHistory.push({ role: "user", prompt: prompt, code: code });
+
+    const historyContext = conversationHistory.map(function (entry, i) {
+      if (entry.role === "user") {
+        return "[User #" + (i + 1) + "] " + entry.prompt + (entry.code ? "\nCode:\n" + entry.code : "");
+      }
+      return "[AI #" + (i + 1) + "]\n" + entry.response;
+    }).join("\n\n---\n\n");
+
+    const fullPrompt = [
+      systemInstruction,
+      "",
+      "=== Conversation History ===",
+      historyContext,
+      "",
+      "=== Current Request ===",
+      "Current code:",
+      code || "(empty)",
+      "",
+      "User request: " + prompt
+    ].join("\n");
+
+    const { spawn } = require("child_process");
+
+    console.log("[AI] === INPUT ===");
+    console.log("[AI] Prompt:", prompt);
+    console.log("[AI] Code length:", (code || "").length, "chars");
+    console.log("[AI] Full prompt length:", fullPrompt.length, "chars");
+
+    const child = spawn("npx", [
+      "claude", "-p",
+      "--max-turns", "20",
+      "--model", "claude-sonnet-4-6",
+      "--permission-mode", "bypassPermissions"
+    ], {
+      stdio: ["pipe", "pipe", "pipe"]
+    });
+
+    child.stdin.write(fullPrompt);
+    child.stdin.end();
+
+    const chunks = [];
+    const errChunks = [];
+
+    child.stdout.on("data", function (data) {
+      chunks.push(data);
+      console.log("[AI] CHUNK:", data.toString().slice(0, 200));
+    });
+
+    child.stderr.on("data", function (data) {
+      errChunks.push(data);
+    });
+
+    child.on("close", function (exitCode) {
+      const stdout = Buffer.concat(chunks).toString().trim();
+      const stderr = Buffer.concat(errChunks).toString().trim();
+
+      console.log("[AI] === OUTPUT ===");
+      console.log("[AI] Exit code:", exitCode);
+      console.log("[AI] Stdout length:", stdout.length);
+      console.log("[AI] Stdout preview:", stdout.slice(0, 500));
+      if (stderr) console.log("[AI] Stderr:", stderr.slice(0, 300));
+
+      if (exitCode !== 0 || !stdout) {
+        res.status(500).json({ ok: false, error: stderr || "claude exited with code " + exitCode });
+        return;
+      }
+
+      const codeMatch = stdout.match(/```(?:typescript|ts|javascript|js)?\n([\s\S]*?)```/);
+      const resultCode = codeMatch ? codeMatch[1].trim() : stdout.trim();
+
+      conversationHistory.push({ role: "ai", response: resultCode });
+      while (conversationHistory.length > MAX_CONVERSATION_HISTORY) {
+        conversationHistory.shift();
+      }
+      console.log("[AI] History:", conversationHistory.length, "entries");
+
+      res.json({ ok: true, code: resultCode });
+    });
+
+    child.on("error", function (err) {
+      console.log("[AI] SPAWN ERROR:", err.message);
+      res.status(500).json({ ok: false, error: err.message });
+    });
+  });
+
+  app.post("/api/ai-reset", function aiReset(_req, res) {
+    conversationHistory.length = 0;
+    console.log("[AI] Conversation history cleared");
+    res.json({ ok: true });
   });
 
   app.post("/api/session/reset", async function resetSession(req, res) {

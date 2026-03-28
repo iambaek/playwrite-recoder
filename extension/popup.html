@@ -8,95 +8,44 @@
   </head>
   <body>
     <main class="app">
-      <header class="header">
-        <h1>Playwrite Recoder</h1>
-        <p>브라우징을 Playwright 단계로 기록합니다.</p>
-      </header>
+      <section class="toolbar">
+        <div class="toolbar-buttons">
+          <button id="recordOnBtn" class="toggle-button">Rec On</button>
+          <button id="recordOffBtn" class="toggle-button">Rec Off</button>
+          <button id="replayBtn">Replay</button>
+          <button id="downloadCodeBtn">Download</button>
+        </div>
+        <div class="toolbar-options">
+          <label class="option-row">
+            <input id="useDelayCheckbox" type="checkbox" checked>
+            <span>Delay</span>
+          </label>
+          <label class="option-row">
+            <input id="skipOnErrorCheckbox" type="checkbox" checked>
+            <span>Skip Error</span>
+          </label>
+          <p id="status" class="status">Idle</p>
+        </div>
+      </section>
 
-      <section class="panel">
-        <div class="server-card">
+      <section class="panel code-panel">
+        <div class="code-header">
+          <h2>Playwright Code</h2>
           <div>
-            <p class="attached-label">Node Server</p>
-            <p id="serverStatusText" class="attached-value">Checking...</p>
-            <p id="serverCommandText" class="attached-meta">Run `npm start` in the project root.</p>
+            <button id="formatCodeBtn" class="small-btn">Format</button>
+            <button id="copyCodeBtn" class="small-btn">Copy</button>
           </div>
-          <span id="serverBadge" class="server-badge is-checking">Checking</span>
         </div>
-        <div class="actions">
-          <button id="copyStartServerBtn">Copy Start Command</button>
-        </div>
-        <div class="recording-toggle" aria-label="Recording Toggle">
-          <button id="recordOnBtn" class="toggle-button">Recording On</button>
-          <button id="recordOffBtn" class="toggle-button">Recording Off</button>
-        </div>
-        <label class="option-row">
-          <input id="reuseSessionCheckbox" type="checkbox" checked>
-          <span>Reuse Browser Session</span>
-        </label>
-        <label class="option-row">
-          <input id="useDelayCheckbox" type="checkbox" checked>
-          <span>Replay With Delay</span>
-        </label>
-        <div class="attached-card">
-          <p class="attached-label">Attached Tab</p>
-          <p id="attachedTabText" class="attached-value">None</p>
-        </div>
-        <div class="actions">
-          <button id="attachCurrentTabBtn">Attach Current Tab</button>
-          <button id="detachTabBtn">Detach Tab</button>
-        </div>
-        <div class="actions">
-          <button id="inspectOnBtn">Inspect On</button>
-          <button id="inspectOffBtn">Inspect Off</button>
-        </div>
-        <div class="attached-card">
-          <p class="attached-label">Inspect Selector</p>
-          <p id="inspectSelectorText" class="attached-value">None</p>
-          <p id="inspectMetaText" class="attached-meta">Hover or pick an element</p>
-        </div>
-        <div class="actions">
-          <button id="copyInspectSelectorBtn">Copy Selector</button>
-        </div>
-        <div class="profile-row">
-          <label for="profileSelect" class="profile-label">Profile</label>
-          <select id="profileSelect" class="profile-select" data-server-required="true"></select>
-        </div>
-        <div class="actions">
-          <input id="newProfileInput" class="text-input" type="text" placeholder="new profile name" data-server-required="true">
-          <button id="createProfileBtn" data-server-required="true">Create Profile</button>
-        </div>
-        <div class="actions">
-          <button id="deleteProfileBtn" data-server-required="true">Delete Profile</button>
-        </div>
-        <div class="actions">
-          <button id="downloadJsonBtn">Download JSON</button>
-          <button id="downloadCodeBtn">Download Playwright</button>
-        </div>
-        <div class="actions">
-          <button id="replayBtn" data-server-required="true">Replay Via Node</button>
-          <button id="showTraceBtn" data-server-required="true">Show Trace</button>
-        </div>
-        <div class="actions">
-          <button id="showReportBtn" data-server-required="true">Show Report</button>
-        </div>
-        <div class="actions">
-          <button id="resetSessionBtn" data-server-required="true">Reset Session</button>
-        </div>
-        <p id="status" class="status">Idle</p>
+        <pre id="codeOutput" class="output" contenteditable="true" spellcheck="false"></pre>
       </section>
 
-      <section class="panel">
-        <h2>Recorded Events</h2>
-        <div class="view-toggle" aria-label="Events View Toggle">
-          <button id="generalViewBtn" class="toggle-button">General</button>
-          <button id="developerViewBtn" class="toggle-button">Developer</button>
+      <section class="panel chat-panel">
+        <h2>AI Agent</h2>
+        <div id="chatMessages" class="chat-messages"></div>
+        <div class="prompt-bar">
+          <textarea id="aiPromptInput" class="prompt-input" placeholder="AI에게 코드 수정을 요청하세요..." rows="2"></textarea>
+          <button id="aiPromptBtn" class="prompt-send-btn">Send</button>
         </div>
-        <pre id="eventsOutput" class="output"></pre>
-      </section>
-
-      <section class="panel">
-        <h2>Playwright Code</h2>
-        <pre id="codeOutput" class="output"></pre>
       </section>
     </main>
 

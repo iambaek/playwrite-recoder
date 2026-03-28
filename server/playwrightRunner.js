@@ -4,6 +4,7 @@ const path = require("path");
 const { spawn } = require("child_process");
 const { chromium, firefox, webkit } = require("playwright");
 const { generatePlaywrightCode, normalizeRecordingToSteps, sanitizeEvents } = require("../shared/playwright-generator");
+const { executeStep } = require("../shared/stepExecutor");
 
 const browserMap = { chromium, firefox, webkit };
 const activeBrowsers = new Set();
@@ -183,104 +184,12 @@ async function runRecording(recording, options = {}) {
   context.setDefaultNavigationTimeout(navigationTimeoutMs);
   let completedSteps = 0;
 
+  const stepOpts = { actionTimeoutMs, navigationTimeoutMs, maxDelayMs };
+
   try {
     for (let index = 0; index < steps.length; index += 1) {
-      const step = steps[index];
-      if (step.type === "wait") {
-        await page.waitForTimeout(Math.min(step.durationMs || 0, maxDelayMs));
-        completedSteps += 1;
-        continue;
-      }
-
-      if (step.type === "goto") {
-        await page.goto(step.url, {
-          waitUntil: "domcontentloaded",
-          timeout: navigationTimeoutMs
-        });
-        completedSteps += 1;
-        continue;
-      }
-
-      if (step.type === "scroll") {
-        await page.evaluate(
-          ({ x, y }) => {
-            window.scrollTo(x, y);
-          },
-          { x: step.x || 0, y: step.y || 0 }
-        );
-        completedSteps += 1;
-        continue;
-      }
-
-      if (step.type === "unsupported" || step.type === "upload") {
-        completedSteps += 1;
-        continue;
-      }
-
-      let scope = page;
-      if (Array.isArray(step.frameSelectors) && step.frameSelectors.length) {
-        for (const frameSelector of step.frameSelectors) {
-          scope = scope.frameLocator(frameSelector);
-        }
-      }
-
-      const locator = scope.locator(step.selector);
-
-      if (step.type === "click") {
-        await locator.click({
-          timeout: actionTimeoutMs
-        });
-        completedSteps += 1;
-        continue;
-      }
-
-      if (step.type === "dblclick") {
-        await locator.dblclick({
-          timeout: actionTimeoutMs
-        });
-        completedSteps += 1;
-        continue;
-      }
-
-      if (step.type === "fill") {
-        await locator.fill(step.value || "", {
-          timeout: actionTimeoutMs
-        });
-        completedSteps += 1;
-        continue;
-      }
-
-      if (step.type === "press") {
-        await locator.press(step.key || "Enter", {
-          timeout: actionTimeoutMs
-        });
-        completedSteps += 1;
-        continue;
-      }
-
-      if (step.type === "check") {
-        await locator.check({
-          timeout: actionTimeoutMs
-        });
-        completedSteps += 1;
-        continue;
-      }
-
-      if (step.type === "uncheck") {
-        await locator.uncheck({
-          timeout: actionTimeoutMs
-        });
-        completedSteps += 1;
-        continue;
-      }
-
-      if (step.type === "select") {
-        await locator.selectOption(step.values || [], {
-          timeout: actionTimeoutMs
-        });
-        completedSteps += 1;
-        continue;
-      }
+      await executeStep(page, steps[index], stepOpts);
+      completedSteps += 1;
     }
   } catch (error) {
     if (traceEnabled) {
@@ -294,16 +203,30 @@ async function runRecording(recording, options = {}) {
     }
     const failedStep = steps[completedSteps] || null;
     const target = failedStep ? failedStep.selector || failedStep.url || failedStep.type : "unknown";
-    error.message =
-      "Step " +
-      String(completedSteps + 1) +
-      "/" +
-      String(steps.length) +
-      " failed at `" +
-      target +
-      "`: " +
-      error.message;
-    throw error;
+    const failResult = {
+      ok: false,
+      eventCount: events.length,
+      stepCount: steps.length,
+      completedSteps,
+      failedStepIndex: completedSteps,
+      failedStepTarget: target,
+      failedStepType: failedStep ? failedStep.type : "unknown",
+      errorMessage: error.message,
+      browserName,
+      completedAt: new Date().toISOString(),
+      keepOpen,
+      profileName,
+      reuseSession: reusable,
+      useDelays: useDelays,
+      tracePath
+    };
+
+    lastRunSummary = {
+      result: failResult,
+      recording
+    };
+
+    return failResult;
   }
 
   if (traceEnabled) {
@@ -466,10 +389,10 @@ function buildReportHtml(summary) {
     "<div class=\"meta\">Generated at " + escapeHtml(new Date().toISOString()) + "</div>",
     "</div>",
     "<div class=\"grid\">",
-    "<div class=\"card\"><div class=\"label\">Profile</div><div class=\"value\">" + escapeHtml(result.profileName || "default") + "</div></div>",
+    "<div class=\"card\"><div class=\"label\">Result</div><div class=\"value\" style=\"color:" + (result.ok ? "#16a34a" : "#dc2626") + "\">" + (result.ok ? "SUCCESS" : "FAILED") + "</div></div>",
+    "<div class=\"card\"><div class=\"label\">Steps</div><div class=\"value\">" + escapeHtml((result.completedSteps || 0) + "/" + (result.stepCount || 0)) + "</div></div>",
     "<div class=\"card\"><div class=\"label\">Browser</div><div class=\"value\">" + escapeHtml(result.browserName || "chromium") + "</div></div>",
-    "<div class=\"card\"><div class=\"label\">Events</div><div class=\"value\">" + escapeHtml(result.eventCount || 0) + "</div></div>",
-    "<div class=\"card\"><div class=\"label\">Delay</div><div class=\"value\">" + escapeHtml(result.useDelays ? "Applied" : "Skipped") + "</div></div>",
+    "<div class=\"card\"><div class=\"label\">Profile</div><div class=\"value\">" + escapeHtml(result.profileName || "default") + "</div></div>",
     "</div>",
     "<table>",
     "<thead><tr><th>#</th><th>Type</th><th>Target</th><th>Value</th><th>Delay</th></tr></thead>",

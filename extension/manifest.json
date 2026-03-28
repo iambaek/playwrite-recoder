@@ -5,6 +5,7 @@
   "description": "Record browsing activity and save it as Playwright-compatible steps.",
   "permissions": [
     "contextMenus",
+    "debugger",
     "notifications",
     "sidePanel",
     "storage",
@@ -18,7 +19,8 @@
     "https://*/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "dist/background.js",
+    "type": "module"
   },
   "options_page": "options.html",
   "side_panel": {

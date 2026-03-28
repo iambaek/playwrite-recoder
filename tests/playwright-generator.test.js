@@ -45,7 +45,7 @@ describe("normalizeRecordingToSteps", () => {
     const recording = { events: [{ type: "navigation", url: "https://example.com" }] };
     const steps = normalizeRecordingToSteps(recording);
     assert.strictEqual(steps.length, 1);
-    assert.deepStrictEqual(steps[0], { type: "goto", url: "https://example.com" });
+    assert.deepStrictEqual(steps[0], { type: "goto", url: "https://example.com", title: "", isPopup: false });
   });
 
   it("converts click event to click step", () => {
@@ -101,7 +101,7 @@ describe("normalizeRecordingToSteps", () => {
     assert.strictEqual(steps[0].y, 500);
   });
 
-  it("skips click followed by navigation", () => {
+  it("skips navigation following a click (keeps click)", () => {
     const recording = {
       events: [
         { type: "click", selector: "#link" },
@@ -110,7 +110,7 @@ describe("normalizeRecordingToSteps", () => {
     };
     const steps = normalizeRecordingToSteps(recording);
     assert.strictEqual(steps.length, 1);
-    assert.strictEqual(steps[0].type, "goto");
+    assert.strictEqual(steps[0].type, "click");
   });
 
   it("includes delay steps when includeDelays is true", () => {
@@ -154,7 +154,7 @@ describe("normalizeRecordingToSteps", () => {
 });
 
 describe("generatePlaywrightCode", () => {
-  it("generates valid playwright script", () => {
+  it("generates valid playwright test runner script", () => {
     const recording = {
       events: [
         { type: "navigation", url: "https://example.com" },
@@ -162,25 +162,24 @@ describe("generatePlaywrightCode", () => {
       ]
     };
     const code = generatePlaywrightCode(recording);
-    assert.ok(code.includes("require('playwright')"));
+    assert.ok(code.includes("from '@playwright/test'"));
+    assert.ok(code.includes("import { test, expect }"));
+    assert.ok(code.includes("test("));
+    assert.ok(code.includes("async ({ page }) =>"));
     assert.ok(code.includes('page.goto("https://example.com")'));
     assert.ok(code.includes('.locator("#btn").click()'));
-    assert.ok(code.includes("browser.close()"));
   });
 
-  it("respects browserName option", () => {
+  it("respects testName option", () => {
     const recording = { events: [] };
-    const code = generatePlaywrightCode(recording, { browserName: "firefox" });
-    assert.ok(code.includes("{ firefox }"));
-    assert.ok(code.includes("firefox.launch"));
+    const code = generatePlaywrightCode(recording, { testName: "Login flow" });
+    assert.ok(code.includes('"Login flow"'));
   });
 
-  it("respects headless option", () => {
+  it("uses default test name when not specified", () => {
     const recording = { events: [] };
-    const codeHeadless = generatePlaywrightCode(recording, { headless: true });
-    assert.ok(codeHeadless.includes("headless: true"));
-    const codeHeaded = generatePlaywrightCode(recording, { headless: false });
-    assert.ok(codeHeaded.includes("headless: false"));
+    const code = generatePlaywrightCode(recording);
+    assert.ok(code.includes('"test"'));
   });
 
   it("generates frameLocator for iframe steps", () => {
