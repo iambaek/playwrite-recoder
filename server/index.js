@@ -141,6 +141,189 @@ function createServer() {
     }
   });
 
+  const scenarioHistory = [];
+
+  app.post("/api/ai-scenario", function aiScenario(req, res) {
+    const prompt = req.body && typeof req.body.prompt === "string" ? req.body.prompt.slice(0, MAX_PROMPT_LENGTH) : "";
+    const url = req.body && typeof req.body.url === "string" ? req.body.url.slice(0, 2000) : "";
+    if (!prompt) {
+      res.status(400).json({ ok: false, error: "prompt is required" });
+      return;
+    }
+
+    const systemInstruction = [
+      "You are a Playwright test scenario creator.",
+      "The user will describe a test scenario in natural language.",
+      "You MUST use Playwright MCP tools to actually interact with the browser and perform the described scenario.",
+      "",
+      "## Workflow",
+      "1. Use browser_navigate to go to the target URL.",
+      "2. Use browser_snapshot to understand the page structure.",
+      "3. Perform the scenario steps using browser_click, browser_fill_form, browser_select_option, browser_press_key, etc.",
+      "4. After each action, use browser_snapshot to verify the result and understand the next state.",
+      "5. When all scenario steps are done, output the recording events JSON.",
+      "",
+      "## Recording Events Output Format",
+      "After completing all browser interactions, you MUST output a JSON block with the recording events.",
+      "Wrap it in ```recording-events markers like this:",
+      "",
+      "```recording-events",
+      '[{"type":"navigation","url":"https://example.com"},{"type":"click","selector":"#login-btn"},{"type":"input","selector":"#email","value":"user@test.com"}]',
+      "```",
+      "",
+      "## Event Types and Fields",
+      '- navigation: { "type": "navigation", "url": "...", "title": "..." }',
+      '- click: { "type": "click", "selector": "..." }',
+      '- dblclick: { "type": "dblclick", "selector": "..." }',
+      '- input (fill): { "type": "input", "selector": "...", "value": "..." }',
+      '- keydown: { "type": "keydown", "selector": "...", "key": "Enter" }',
+      '- check: { "type": "check", "selector": "...", "checked": true }',
+      '- select: { "type": "select", "selector": "...", "values": ["..."] }',
+      '- scroll: { "type": "scroll", "x": 0, "y": 500 }',
+      '- popup_opened: { "type": "popup_opened" }',
+      "",
+      "## Selector Rules",
+      "- Prefer role selectors: role=button[name=\"Submit\"], role=link[name=\"Login\"]",
+      "- Use placeholder selectors: [placeholder=\"Email\"]",
+      "- Use data-testid: [data-testid=\"login-form\"]",
+      "- Fallback to CSS: #id, .class, tag",
+      "- Get selectors from the browser_snapshot accessibility tree — use the element's role and name.",
+      "",
+      "## Important",
+      "- You MUST actually perform the actions in the browser using MCP tools, not just imagine them.",
+      "- The recording events must reflect what you actually did in the browser.",
+      "- Output ONLY the ```recording-events JSON block at the end. No other code blocks.",
+      "- If a page requires login credentials or specific data, use placeholder values and add a comment in the first event."
+    ].join("\n");
+
+    scenarioHistory.push({ role: "user", prompt: prompt, url: url });
+
+    const historyContext = scenarioHistory.map(function (entry, i) {
+      if (entry.role === "user") {
+        return "[User #" + (i + 1) + "] " + entry.prompt + (entry.url ? " (URL: " + entry.url + ")" : "");
+      }
+      return "[AI #" + (i + 1) + "] completed scenario";
+    }).join("\n\n---\n\n");
+
+    const fullPrompt = [
+      systemInstruction,
+      "",
+      "=== Conversation History ===",
+      historyContext,
+      "",
+      "=== Current Request ===",
+      url ? "Target URL: " + url : "(no URL provided — ask the user or infer from the scenario)",
+      "Scenario: " + prompt
+    ].join("\n");
+
+    const { spawn } = require("child_process");
+
+    console.log("[AI-Scenario] === INPUT ===");
+    console.log("[AI-Scenario] Prompt:", prompt);
+    console.log("[AI-Scenario] URL:", url || "(none)");
+
+    const child = spawn("npx", [
+      "claude", "-p",
+      "--max-turns", "30",
+      "--model", "claude-sonnet-4-6",
+      "--permission-mode", "bypassPermissions"
+    ], {
+      stdio: ["pipe", "pipe", "pipe"]
+    });
+
+    child.stdin.write(fullPrompt);
+    child.stdin.end();
+
+    const chunks = [];
+    const errChunks = [];
+
+    child.stdout.on("data", function (data) {
+      chunks.push(data);
+    });
+
+    child.stderr.on("data", function (data) {
+      errChunks.push(data);
+    });
+
+    child.on("close", function (exitCode) {
+      const stdout = Buffer.concat(chunks).toString().trim();
+      const stderr = Buffer.concat(errChunks).toString().trim();
+
+      console.log("[AI-Scenario] === OUTPUT ===");
+      console.log("[AI-Scenario] Exit code:", exitCode);
+      console.log("[AI-Scenario] Stdout length:", stdout.length);
+      console.log("[AI-Scenario] Stdout preview:", stdout.slice(0, 500));
+      if (stderr) console.log("[AI-Scenario] Stderr:", stderr.slice(0, 300));
+
+      if (exitCode !== 0 || !stdout) {
+        res.status(500).json({ ok: false, error: stderr || "claude exited with code " + exitCode });
+        return;
+      }
+
+      // Parse recording events from output
+      const eventsMatch = stdout.match(/```recording-events\n([\s\S]*?)```/);
+      if (!eventsMatch) {
+        // Fallback: try to find any JSON array in the output
+        const jsonMatch = stdout.match(/\[[\s\S]*?\{[\s\S]*?"type"[\s\S]*?\}[\s\S]*?\]/);
+        if (jsonMatch) {
+          try {
+            const events = JSON.parse(jsonMatch[0]);
+            const recording = { events: events };
+            const { generatePlaywrightCode } = require("../shared/playwright-generator");
+            const code = generatePlaywrightCode(recording, { useDelays: false });
+            scenarioHistory.push({ role: "ai", events: events });
+            while (scenarioHistory.length > MAX_CONVERSATION_HISTORY) {
+              scenarioHistory.shift();
+            }
+            res.json({ ok: true, code: code, events: events });
+            return;
+          } catch (_parseErr) {
+            // ignore parse error, fall through
+          }
+        }
+
+        // Last fallback: return raw output as code if it looks like Playwright code
+        const codeMatch = stdout.match(/```(?:typescript|ts|javascript|js)?\n([\s\S]*?)```/);
+        if (codeMatch) {
+          res.json({ ok: true, code: codeMatch[1].trim(), events: [] });
+          return;
+        }
+
+        res.status(500).json({ ok: false, error: "AI did not return recording events. Raw output: " + stdout.slice(0, 500) });
+        return;
+      }
+
+      try {
+        const events = JSON.parse(eventsMatch[1].trim());
+        const recording = { events: events };
+        const { generatePlaywrightCode } = require("../shared/playwright-generator");
+        const code = generatePlaywrightCode(recording, { useDelays: false });
+
+        scenarioHistory.push({ role: "ai", events: events });
+        while (scenarioHistory.length > MAX_CONVERSATION_HISTORY) {
+          scenarioHistory.shift();
+        }
+
+        console.log("[AI-Scenario] Generated code from", events.length, "events");
+        res.json({ ok: true, code: code, events: events });
+      } catch (parseErr) {
+        console.log("[AI-Scenario] JSON parse error:", parseErr.message);
+        res.status(500).json({ ok: false, error: "Failed to parse recording events: " + parseErr.message });
+      }
+    });
+
+    child.on("error", function (err) {
+      console.log("[AI-Scenario] SPAWN ERROR:", err.message);
+      res.status(500).json({ ok: false, error: err.message });
+    });
+  });
+
+  app.post("/api/ai-scenario-reset", function aiScenarioReset(_req, res) {
+    scenarioHistory.length = 0;
+    console.log("[AI-Scenario] Conversation history cleared");
+    res.json({ ok: true });
+  });
+
   const conversationHistory = [];
 
   app.post("/api/ai-prompt", function aiPrompt(req, res) {

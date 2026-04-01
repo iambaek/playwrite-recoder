@@ -367,6 +367,42 @@ function addStatusMessage(text) {
   return msg;
 }
 
+function isScenarioRequest(prompt, code) {
+  const scenarioKeywords = [
+    "시나리오", "scenario", "만들어", "생성", "create",
+    "테스트 작성", "test 작성", "자동화", "automate",
+    "접속해서", "가서", "열어서", "들어가서",
+    "로그인", "회원가입", "검색", "구매", "결제",
+    "navigate", "go to", "visit", "open"
+  ];
+  const promptLower = prompt.toLowerCase();
+  const hasKeyword = scenarioKeywords.some(function (kw) {
+    return promptLower.includes(kw.toLowerCase());
+  });
+  const codeIsEmpty = !code || code.trim() === "" || /^import.*\ntest\(.*\{\n\}\);?\s*$/s.test(code.trim());
+  return hasKeyword && codeIsEmpty;
+}
+
+function extractUrlFromPrompt(prompt) {
+  const urlMatch = prompt.match(/https?:\/\/[^\s,)}\]]+/);
+  return urlMatch ? urlMatch[0] : "";
+}
+
+async function sendAiScenario(prompt, url) {
+  const response = await fetch("http://localhost:3100/api/ai-scenario", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, url })
+  });
+
+  const data = await response.json();
+  if (!data.ok) {
+    throw new Error(data.error || "AI scenario request failed");
+  }
+
+  return data.code;
+}
+
 async function sendAiPrompt(prompt, code) {
   const response = await fetch("http://localhost:3100/api/ai-prompt", {
     method: "POST",
@@ -415,10 +451,17 @@ function applyAiResult(resultCode) {
 
 async function processAiRequest(prompt, code) {
   aiProcessing = true;
-  const statusMsg = addStatusMessage("AI가 코드를 분석하고 있습니다...");
+  const useScenario = isScenarioRequest(prompt, code);
+  const statusMsg = addStatusMessage(
+    useScenario
+      ? "AI가 브라우저를 조작하며 시나리오를 생성하고 있습니다..."
+      : "AI가 코드를 분석하고 있습니다..."
+  );
 
   try {
-    const resultCode = await sendAiPrompt(prompt, code);
+    const resultCode = useScenario
+      ? await sendAiScenario(prompt, extractUrlFromPrompt(prompt))
+      : await sendAiPrompt(prompt, code);
     statusMsg.remove();
     applyAiResult(resultCode);
 
