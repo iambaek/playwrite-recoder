@@ -18,12 +18,23 @@
     "recorder",
     "automation"
   ],
+  "files": [
+    "server/",
+    "shared/",
+    "README.md"
+  ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iambaek/playwright-recorder.git"
+  },
   "dependencies": {
-    "@anthropic-ai/claude-code": "^2.1.85",
-    "esbuild": "^0.27.4",
     "express": "^4.21.2",
     "playwright": "^1.52.0",
     "playwright-crx": "^0.15.0"
+  },
+  "devDependencies": {
+    "@anthropic-ai/claude-code": "^2.1.85",
+    "esbuild": "^0.27.4"
   }
 }

@@ -1,0 +1,21 @@
+# Dev & IDE
+.claude/
+.vscode/
+.idea/
+conv-logs/
+
+# Tests
+tests/
+
+# Chrome Extension (not needed for npm package)
+extension/
+
+# Runtime data
+recordings/
+
+# Deps & build artifacts
+node_modules/
+
+# Misc
+*.sh
+CLAUDE.md
