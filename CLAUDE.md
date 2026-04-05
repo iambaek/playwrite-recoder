@@ -1,4 +1,4 @@
-# Playwright Recoder - Project Guide
+# Playwright Recorder - Project Guide
 
 ## Build & Test
 - Build: `npm run build`
